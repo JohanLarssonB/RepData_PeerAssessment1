@@ -4,12 +4,14 @@
 ## Loading and preprocessing the data
 
 Load the file into variable data
-```{r readdata}
+
+```r
     data <- read.csv("activity.csv", sep=",", header=TRUE, colClasses = "character")
 ```
 
 Convert steps and interval to integer and date to date formats
-```{r convertdata}
+
+```r
     data$steps<-as.integer(data$steps)
     data$interval<-as.integer(data$interval)
     data$date<-as.Date(data$date)
@@ -17,21 +19,37 @@ Convert steps and interval to integer and date to date formats
 
 ## What is mean total number of steps taken per day?
 ### Histogram of the total number of steps taken each day
-```{r histsum}
+
+```r
     dtsum<-tapply(data$steps,data$date,sum)
     hist(dtsum,breaks = 1000*(0:22), main = "Steps per day", xlab = "Steps")
 ```
 
+![plot of chunk histsum](figure/histsum.png) 
+
 ### Mean and median total number of steps taken per day
-```{r meanmedian}
+
+```r
     # Mean
     round(mean((tapply(data$steps, data$date, sum)), na.rm = TRUE))
+```
+
+```
+## [1] 10766
+```
+
+```r
     # Median
     round(median((tapply(data$steps, data$date, sum)), na.rm = TRUE))
 ```
 
+```
+## [1] 10765
+```
+
 ## What is the average daily activity pattern?
-```{r intervalplot}
+
+```r
     meanperinterval <- tapply(data$steps, data$interval, mean, na.rm = TRUE)
     plot(levels(factor(data$interval)), 
          meanperinterval, type = "l",
@@ -40,26 +58,35 @@ Convert steps and interval to integer and date to date formats
          )
 ```
 
+![plot of chunk intervalplot](figure/intervalplot.png) 
 
-```{r maxinterval}
+
+
+```r
     maximum <- names(which.max(meanperinterval))
 ```
 
-The interval during the day that on average contains the maximum number of days is `r maximum`.
+The interval during the day that on average contains the maximum number of days is 835.
 
 ## Imputing missing values
   
 ### Number of missing values
 
-```{r missingvalues}
+
+```r
     sum(is.na(data$steps))
+```
+
+```
+## [1] 2304
 ```
 
 ### Missing values
 
 Missing values will be filled in by the mean for the 5-minute interval.  
 
-```{r missing}
+
+```r
     isna <- is.na(data$steps)                                               
     # New table with the columns interval and meanperinterval as the rounded mean per interval
     intervalmean <- cbind(as.integer(names(meanperinterval)),
@@ -74,23 +101,39 @@ Missing values will be filled in by the mean for the 5-minute interval.
 ```
 
 ### Histogram and mean and median of the total number of steps taken each day
-```{r histsum2}
+
+```r
     dtsum2<-tapply(data$steps,data$date,sum)
     hist(dtsum2,breaks = 1000*(0:22), main = "Steps per day", xlab = "Steps")
 ```
 
-```{r meanmedian2}
+![plot of chunk histsum2](figure/histsum2.png) 
+
+
+```r
     # Mean
     round(mean((tapply(data$steps, data$date, sum)), na.rm = TRUE))
+```
+
+```
+## [1] 10766
+```
+
+```r
     # Median
     round(median((tapply(data$steps, data$date, sum)), na.rm = TRUE))
+```
+
+```
+## [1] 10762
 ```
 
 The distribution is almost the same , except that there are more days in the bin with the mean number of steps per day. This is due to that days that previously only had NA values now get the average number of steps per day. The mean and median are not significantly changed by the imputing missing data.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-```{r weekdays}
+
+```r
     data$day <- weekdays(data$date)
     data$daytype <- factor(ifelse(data$day %in% c("lördag", "söndag"), "weekend", "weekday"))
     isweekend <- data$daytype == "weekend"
@@ -108,3 +151,5 @@ The distribution is almost the same , except that there are more days in the bin
          ylab = "Number of steps"
          )
 ```
+
+![plot of chunk weekdays](figure/weekdays.png) 
