@@ -3,13 +3,21 @@
 
 ## Loading and preprocessing the data
 
-Load the file into variable data
+Load required libraries.
+
+```r
+    library(dplyr)
+    library(ggplot2)
+```
+
+
+Load the file into variable data.
 
 ```r
     data <- read.csv("activity.csv", sep=",", header=TRUE, colClasses = "character")
 ```
 
-Convert steps and interval to integer and date to date formats
+Convert steps and interval to integer and date to date formats.
 
 ```r
     data$steps<-as.integer(data$steps)
@@ -17,17 +25,18 @@ Convert steps and interval to integer and date to date formats
     data$date<-as.Date(data$date)
 ```
 
-## What is mean total number of steps taken per day?
-### Histogram of the total number of steps taken each day
+## What is the average number of steps taken per day?
+
+Histogram of the total number of steps taken each day.
 
 ```r
     dtsum<-tapply(data$steps,data$date,sum)
     hist(dtsum,breaks = 1000*(0:22), main = "Steps per day", xlab = "Steps")
 ```
 
-![plot of chunk histsum](figure/histsum.png) 
+![plot of chunk histsum](figure/histsum-1.png) 
 
-### Mean and median total number of steps taken per day
+The mean and median total number of steps taken per day.
 
 ```r
     # Mean
@@ -49,6 +58,8 @@ Convert steps and interval to integer and date to date formats
 
 ## What is the average daily activity pattern?
 
+The average daily activity pattern, averaged per 5-minute interval over all days, is shown below.
+
 ```r
     meanperinterval <- tapply(data$steps, data$interval, mean, na.rm = TRUE)
     plot(levels(factor(data$interval)), 
@@ -58,32 +69,22 @@ Convert steps and interval to integer and date to date formats
          )
 ```
 
-![plot of chunk intervalplot](figure/intervalplot.png) 
+![plot of chunk intervalplot](figure/intervalplot-1.png) 
 
 
-
-```r
-    maximum <- names(which.max(meanperinterval))
-```
 
 The interval during the day that on average contains the maximum number of days is 835.
 
 ## Imputing missing values
-  
-### Number of missing values
+
+This section investigate the impact on imputing data for missing values. 
 
 
 ```r
-    sum(is.na(data$steps))
+    missingValues <- sum(is.na(data$steps))
 ```
 
-```
-## [1] 2304
-```
-
-### Missing values
-
-Missing values will be filled in by the mean for the 5-minute interval.  
+There are in total 2304 missing values in the column steps. Missing values will be filled in by the mean for the 5-minute interval.  
 
 
 ```r
@@ -100,14 +101,15 @@ Missing values will be filled in by the mean for the 5-minute interval.
     data[isna, "steps"]<- meandata[isna, "meanperinterval"]
 ```
 
-### Histogram and mean and median of the total number of steps taken each day
+Histogram of the total number of steps taken each day after imputing missing values.
+
 
 ```r
-    dtsum2<-tapply(data$steps,data$date,sum)
-    hist(dtsum2,breaks = 1000*(0:22), main = "Steps per day", xlab = "Steps")
+    dtsum<-tapply(data$steps,data$date,sum)
+    hist(dtsum,breaks = 1000*(0:22), main = "Steps per day", xlab = "Steps")
 ```
 
-![plot of chunk histsum2](figure/histsum2.png) 
+![plot of chunk histsum2](figure/histsum2-1.png) 
 
 
 ```r
@@ -128,28 +130,35 @@ Missing values will be filled in by the mean for the 5-minute interval.
 ## [1] 10762
 ```
 
-The distribution is almost the same , except that there are more days in the bin with the mean number of steps per day. This is due to that days that previously only had NA values now get the average number of steps per day. The mean and median are not significantly changed by the imputing missing data.
+The distribution is almost the same after imputing missing values, except that there are more days in the bin with the mean number of steps per day. This is due to that days that previously only had NA values now get the average number of steps per day. The mean and median are not significantly changed by the imputing missing data.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
+The weekdays function is used to add column indicating the day of the week that the data is measured. Locale "C" is used to get english names in case of non-english system locale settings.
+
 
 ```r
+    # Change locale to give weekdays in English
+    Sys.setlocale("LC_TIME", "C")
     data$day <- weekdays(data$date)
-    data$daytype <- factor(ifelse(data$day %in% c("lördag", "söndag"), "weekend", "weekday"))
-    isweekend <- data$daytype == "weekend"
-    wdmeanperinterval <- tapply(data$steps[!isweekend], data$interval[!isweekend], mean, na.rm = TRUE)
-    wemeanperinterval <- tapply(data$steps[isweekend], data$interval[isweekend], mean, na.rm = TRUE) 
-    par(mfrow = c(2,1))
-    plot(levels(factor(data$interval)), 
-         wdmeanperinterval, type = "l",
-         xlab = "Interval",
-         ylab = "Number of steps"
-         )
-    plot(levels(factor(data$interval)), 
-         wemeanperinterval, type = "l",
-         xlab = "Interval",
-         ylab = "Number of steps"
-         )
+    # Change locale back to system default
+    Sys.setlocale("LC_TIME", "")
 ```
 
-![plot of chunk weekdays](figure/weekdays.png) 
+The plot below shows the activity patters separated into weekday and weekend data.
+
+
+```r
+    data$daytype <- factor(ifelse(data$day %in% c("Saturday", "Sunday"), "weekend", "weekday"))
+    data2 <- data %>% 
+             group_by(daytype, interval) %>%
+             select(steps, interval, daytype) %>%
+             summarize(steps = mean(steps))
+    g <- ggplot(data2, aes(interval, steps))
+    g <- g + geom_line() + facet_wrap(~daytype, ncol = 1)
+    g
+```
+
+![plot of chunk weekday_plot](figure/weekday_plot-1.png) 
+
+The activity pattern is somewhat more spread out during the weekends and the activity starts and finishes later than during weekdays.
